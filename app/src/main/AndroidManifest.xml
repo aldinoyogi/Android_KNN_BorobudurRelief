@@ -22,12 +22,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ReliefBorobudur">
         <activity
-            android:name=".KNeighbours"
-            android:exported="true" />
-        <activity
-            android:name=".CameraStreamOpenCV"
-            android:exported="true" />
-        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>

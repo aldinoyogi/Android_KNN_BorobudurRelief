@@ -1,61 +1,134 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
-<FrameLayout xmlns:android='http://schemas.android.com/apk/res/android'
+<LinearLayout
+    xmlns:android='http://schemas.android.com/apk/res/android'
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/black"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    android:orientation="vertical"
+    android:layout_height="match_parent">
 
-    <org.opencv.android.JavaCameraView
+    <FrameLayout
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_width="match_parent"
-        android:id="@+id/camera_stream_view"
-        />
+        android:background="@color/black"
+        android:id="@+id/layout_main">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:layout_gravity="bottom"
-        android:orientation="horizontal"
-        android:layout_marginBottom="70dp"
-        >
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
+        <org.opencv.android.JavaCameraView
+            android:id="@+id/camera_stream_view"
             android:layout_width="match_parent"
-            android:layout_height="80dp"
-            android:id="@+id/button_capture"
-            android:layout_gravity="center"
-            android:scaleType="center"
-            android:src="@drawable/fab_background"
-            android:background="@color/white"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:orientation="horizontal"
+            android:layout_marginBottom="70dp"
+            >
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:id="@+id/button_capture"
+                android:layout_gravity="center"
+                android:scaleType="center"
+                android:src="@drawable/fab_background"
+                android:background="@color/white"
+                android:clickable="true"
+                android:backgroundTint="@android:color/white"
+                />
+
+
+        </LinearLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_portrait"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_baseline_stay_current_portrait_24"
             android:clickable="true"
-            android:backgroundTint="@android:color/white"
+            android:layout_gravity="bottom|right"
+            android:layout_marginBottom="82dp"
+            android:layout_marginRight="30dp"
+            app:backgroundTint="@color/white"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_landscape"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_baseline_stay_current_landscape_24"
+            android:clickable="true"
+            android:layout_gravity="bottom|right"
+            android:layout_marginBottom="82dp"
+            android:layout_marginRight="30dp"
+            app:backgroundTint="@color/white"/>
+
+        <SeekBar
+            android:id="@+id/seekbar_crop"
+            android:layout_marginHorizontal="40dp"
+            android:layout_gravity="bottom|center"
+            android:layout_marginBottom="180dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:progressDrawable="@drawable/seek_bar"
+            android:thumb="@drawable/seek_thumb"
+            />
+
+    </FrameLayout>
+
+    <FrameLayout
+        xmlns:android='http://schemas.android.com/apk/res/android'
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white"
+        android:id="@+id/layout_view"
+        >
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/imageview_captured"
+            android:background="@color/black"
             />
 
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/textview_prediction"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center"
+            android:text="TextView"
+            android:textFontWeight="24"
+            android:textSize="20dp"
+            android:background="#80000000"
+            android:textColor="@color/white" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_portrait"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_stay_current_portrait_24"
-        android:clickable="true"
-        android:layout_gravity="bottom|right"
-        android:layout_marginBottom="85dp"
-        android:layout_marginRight="30dp"
-        app:backgroundTint="@color/white"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp"
+            android:paddingHorizontal="40dp"
+            >
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_landscape"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_baseline_stay_current_landscape_24"
-        android:clickable="true"
-        android:layout_gravity="bottom|right"
-        android:layout_marginBottom="82dp"
-        android:layout_marginRight="30dp"
-        app:backgroundTint="@color/white"/>
 
-</FrameLayout>
+            <Button
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="Kembali"
+                android:background="@color/black"
+                android:textColor="@color/white"
+                android:id="@+id/button_back"
+                />
+
+
+        </LinearLayout>
+
+
+    </FrameLayout>
+
+</LinearLayout>

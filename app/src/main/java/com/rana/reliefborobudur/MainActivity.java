@@ -13,6 +13,11 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -28,7 +33,10 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.ml.KNearest;
+import org.opencv.ml.Ml;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,18 +51,30 @@ public class MainActivity extends CameraActivity {
     private FloatingActionButton captureButton;
     private FloatingActionButton portraitButton;
     private FloatingActionButton landscapeButton;
+    private FrameLayout layoutMain;
+    private FrameLayout layoutView;
+    private TextView mTextView;
+    private Button mBackButton;
+    private ImageView mImageView;
+    private SeekBar seekBarCrop;
 
     Boolean portraitMode = false;
     int imageHeight = 0;
     int imageWidth = 0;
-    double imageCropHeight = 0.19; // Just 0.0 - 0.45
+    double imageCropHeight = 0.20;
 
-    Mat collectedDataset;
-    Mat capturedImage;
-    Boolean savePicture;
-    Boolean collected = false;
+    List<Mat> collectedDataset = new ArrayList<Mat>();
+    List<Mat> capturedImage = new ArrayList<Mat>();
+    List<String> listLabelStrings = new ArrayList<String>();
+    List<Mat> listLabelIntegers = new ArrayList<Mat>();
+
 
     private Mat collectingDatasets(){
+        collectedDataset.clear();
+        listLabelIntegers.clear();
+        listLabelStrings.clear();
+
+
         Mat listMat = new Mat();
         AssetManager assetManager = getAssets();
         Mat temporaryImage = new Mat();
@@ -80,6 +100,7 @@ public class MainActivity extends CameraActivity {
                             temporaryImage = temporaryImage.reshape(1, 1);
                             temporaryImage.convertTo(temporaryImage, CvType.CV_32F);
                             listMat.push_back(temporaryImage.reshape(1,1));
+                            listLabelStrings.add(folder.trim());
                             temporaryImage.release();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -88,7 +109,13 @@ public class MainActivity extends CameraActivity {
                     }
                 }
             }
-            SystemClock.sleep(500);
+            Mat labels = new Mat(1, listLabelStrings.size(), CvType.CV_32F);
+            for (int i = 0; i < listLabelStrings.size(); i++){
+                labels.put(0, i, i);
+            }
+            labels.convertTo(labels, CvType.CV_32F);
+            listLabelIntegers.add(labels);
+
             return listMat;
         }  catch (IOException e) {
             Log.i(LOGTAG, e.getMessage());
@@ -117,6 +144,46 @@ public class MainActivity extends CameraActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        layoutMain = (FrameLayout) findViewById(R.id.layout_main);
+        layoutView = (FrameLayout) findViewById(R.id.layout_view);
+
+        mTextView = (TextView) findViewById(R.id.textview_prediction);
+        mImageView = (ImageView) findViewById(R.id.imageview_captured);
+        seekBarCrop = (SeekBar) findViewById(R.id.seekbar_crop);
+
+        seekBarCrop.setProgress(50);
+
+        seekBarCrop.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                Log.i(LOGTAG, String.format("%d", progress));
+                imageCropHeight = 0.004*progress;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        mBackButton = (Button) findViewById(R.id.button_back);
+
+        mBackButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                layoutMain.setVisibility(View.VISIBLE);
+                layoutView.setVisibility(View.GONE);
+                mImageView.setImageResource(android.R.color.transparent);
+            }
+        });
+
+        layoutView.setVisibility(View.INVISIBLE);
 
         landscapeButton = (FloatingActionButton) findViewById(R.id.fab_landscape);
         portraitButton = (FloatingActionButton) findViewById(R.id.fab_portrait);
@@ -148,13 +215,11 @@ public class MainActivity extends CameraActivity {
         captureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (capturedImage != null){
-                    long capt = capturedImage.getNativeObjAddr();
-                    long coll = collectedDataset.getNativeObjAddr();
-                    Intent kNeighboursActivity = new Intent(MainActivity.this, KNeighbours.class);
-                    kNeighboursActivity.putExtra("imageCaptured", capt);
-                    kNeighboursActivity.putExtra("collectedDataset", coll);
-                    startActivity(kNeighboursActivity);
+                if (capturedImage.size() > 0){
+                    layoutMain.setVisibility(View.GONE);
+                    layoutView.setVisibility(View.VISIBLE);
+                    startPrediction();
+
                 }
             }
         });
@@ -171,7 +236,7 @@ public class MainActivity extends CameraActivity {
         public void onCameraViewStarted(int width, int height) {
             imageHeight = height;
             imageWidth = width;
-            collectedDataset = collectingDatasets();
+            collectedDataset.add(collectingDatasets());
         }
 
         @Override
@@ -184,20 +249,24 @@ public class MainActivity extends CameraActivity {
         public Mat onCameraFrame(Mat inputFrame) {
             Core.rotate(inputFrame, inputFrame, 0);
             int topPoint = (int)(imageHeight*imageCropHeight);
-            SystemClock.sleep(30);
+            SystemClock.sleep(15);
+            capturedImage.clear();
             if(portraitMode){
                 Imgproc.rectangle(inputFrame, new Point(topPoint, 0),
                         new Point(imageWidth-topPoint, imageHeight),
                         new Scalar(255,223,0), 2);
                 Rect roi = new Rect(topPoint, 0, imageWidth - (topPoint*2), imageHeight);
-                capturedImage = new Mat(inputFrame, roi);
+                Mat newMat = new Mat(inputFrame, roi);
+                capturedImage.add(newMat);
             } else {
                 Imgproc.rectangle(inputFrame, new Point(0, topPoint),
                         new Point(imageWidth, imageHeight-topPoint),
                         new Scalar(255,223,0), 2);
                 Rect roi = new Rect(0, topPoint, imageWidth, imageHeight - (topPoint*2));
-                capturedImage = new Mat(inputFrame, roi);
+                Mat newMat = new Mat(inputFrame, roi);
+                capturedImage.add(newMat);
             }
+            System.gc();
             return inputFrame;
         }
 
@@ -228,4 +297,71 @@ public class MainActivity extends CameraActivity {
             cameraBridgeViewBase.disableView();
         }
     }
+
+    /*============================================================================================*/
+    /*============================================================================================*/
+    /*============================================================================================*/
+
+    public void startPrediction(){
+        Mat imageCropped = capturedImage.get(0);
+        Bitmap mBitmap = convertMatToBitmap(imageCropped);
+        showImageOnImageView(mBitmap);
+
+        Mat resizedImage = resizeImage(imageCropped);
+        Mat reshapedImage = reshapeMat(resizedImage);
+        predictCurrentImageWithKNN(reshapedImage, collectedDataset.get(0));
+    }
+
+    public void showImageOnImageView(Bitmap currentBitmap){
+        mImageView.setImageBitmap(currentBitmap);
+    }
+
+
+    public Bitmap convertMatToBitmap(Mat imageCaptured){
+        Bitmap mBitmap = Bitmap.createBitmap(imageCaptured.cols(), imageCaptured.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(imageCaptured, mBitmap, true);
+        return mBitmap;
+    }
+
+
+
+    public Mat resizeImage(Mat inputImage){
+        Mat resizedImage = new Mat();
+        Size sz = new Size(32,32);
+        Imgproc.resize(inputImage, resizedImage, sz);
+        return resizedImage;
+    }
+
+
+    public Mat reshapeMat(Mat inputMat){
+        Mat reshaped = inputMat.reshape(1, 1);
+        reshaped.convertTo(reshaped, CvType.CV_32F);
+        return reshaped;
+    }
+
+    public void predictCurrentImageWithKNN(Mat inputImage, Mat listMat) {
+        /*=============Training KNN=================*/
+        KNearest KNN = KNearest.create();
+        KNN.train(collectedDataset.get(0), Ml.ROW_SAMPLE, listLabelIntegers.get(0));
+        /*==========================================*/
+
+
+        /*====================Start Prediction================*/
+        Mat newMat = new Mat();
+        float nearestValue;
+        String labelPrediction;
+
+        KNN.isClassifier();
+        nearestValue = KNN.findNearest(inputImage, 1, newMat);
+        labelPrediction = listLabelStrings.get((int)nearestValue);
+        /*=====================================================*/
+
+        mTextView.setText(labelPrediction);
+        newMat.release();
+        KNN.clear();
+        System.gc();
+    }
+
+
+
 }
