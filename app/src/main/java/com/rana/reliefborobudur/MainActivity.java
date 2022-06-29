@@ -5,7 +5,9 @@ import static org.opencv.core.Core.flip;
 
 
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -19,6 +21,7 @@ import org.opencv.android.CameraActivity;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -27,6 +30,9 @@ import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,9 +49,54 @@ public class MainActivity extends CameraActivity {
     int imageWidth = 0;
     double imageCropHeight = 0.19; // Just 0.0 - 0.45
 
+    Mat collectedDataset;
     Mat capturedImage;
-
     Boolean savePicture;
+    Boolean collected = false;
+
+    private Mat collectingDatasets(){
+        Mat listMat = new Mat();
+        AssetManager assetManager = getAssets();
+        Mat temporaryImage = new Mat();
+        InputStream istr = null;
+
+        /*====================================Collecting Dataset==================================*/
+        try {
+
+            String[] dirPaths = assetManager.list("datasets");
+
+            for (String folder:dirPaths){
+
+                String[] fileNames = assetManager.list("datasets/"+folder);
+
+                for (String fileName:fileNames){
+                    if(fileName.endsWith(".jpg") || fileName.endsWith(".png")
+                            || fileName.endsWith(".jpeg")){
+
+                        try {
+                            istr = assetManager.open("datasets/"+folder+"/"+fileName);
+                            Bitmap bitmap = BitmapFactory.decodeStream(istr);
+                            Utils.bitmapToMat(bitmap, temporaryImage, true);
+                            temporaryImage = temporaryImage.reshape(1, 1);
+                            temporaryImage.convertTo(temporaryImage, CvType.CV_32F);
+                            listMat.push_back(temporaryImage.reshape(1,1));
+                            temporaryImage.release();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }
+            }
+            SystemClock.sleep(500);
+            return listMat;
+        }  catch (IOException e) {
+            Log.i(LOGTAG, e.getMessage());
+            e.printStackTrace();
+        }
+        SystemClock.sleep(500);
+        return null;
+    }
 
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
 
@@ -98,14 +149,11 @@ public class MainActivity extends CameraActivity {
             @Override
             public void onClick(View view) {
                 if (capturedImage != null){
-                    Log.i(LOGTAG, String.format("Height: %d, Width: %d, Channel: %d",
-                            capturedImage.height(),
-                            capturedImage.width(),
-                            capturedImage.channels()));
-
-                    long addr = capturedImage.getNativeObjAddr();
+                    long capt = capturedImage.getNativeObjAddr();
+                    long coll = collectedDataset.getNativeObjAddr();
                     Intent kNeighboursActivity = new Intent(MainActivity.this, KNeighbours.class);
-                    kNeighboursActivity.putExtra("imageCaptured", addr);
+                    kNeighboursActivity.putExtra("imageCaptured", capt);
+                    kNeighboursActivity.putExtra("collectedDataset", coll);
                     startActivity(kNeighboursActivity);
                 }
             }
@@ -123,6 +171,7 @@ public class MainActivity extends CameraActivity {
         public void onCameraViewStarted(int width, int height) {
             imageHeight = height;
             imageWidth = width;
+            collectedDataset = collectingDatasets();
         }
 
         @Override
@@ -135,7 +184,7 @@ public class MainActivity extends CameraActivity {
         public Mat onCameraFrame(Mat inputFrame) {
             Core.rotate(inputFrame, inputFrame, 0);
             int topPoint = (int)(imageHeight*imageCropHeight);
-
+            SystemClock.sleep(30);
             if(portraitMode){
                 Imgproc.rectangle(inputFrame, new Point(topPoint, 0),
                         new Point(imageWidth-topPoint, imageHeight),
@@ -149,8 +198,6 @@ public class MainActivity extends CameraActivity {
                 Rect roi = new Rect(0, topPoint, imageWidth, imageHeight - (topPoint*2));
                 capturedImage = new Mat(inputFrame, roi);
             }
-
-
             return inputFrame;
         }
 
@@ -168,7 +215,6 @@ public class MainActivity extends CameraActivity {
     protected void onResume() {
         super.onResume();
         if (!OpenCVLoader.initDebug()){
-            Log.i(LOGTAG, "OpenCV not found");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION, this, loaderCallback);
         } else {
             loaderCallback.onManagerConnected(SUCCESS);

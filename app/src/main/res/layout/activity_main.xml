@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/black"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <org.opencv.android.JavaCameraView
@@ -53,7 +54,7 @@
         android:src="@drawable/ic_baseline_stay_current_landscape_24"
         android:clickable="true"
         android:layout_gravity="bottom|right"
-        android:layout_marginBottom="85dp"
+        android:layout_marginBottom="82dp"
         android:layout_marginRight="30dp"
         app:backgroundTint="@color/white"/>
 

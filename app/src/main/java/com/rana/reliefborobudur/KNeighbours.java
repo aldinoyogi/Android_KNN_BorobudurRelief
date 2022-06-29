@@ -6,6 +6,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -30,8 +31,10 @@ public class KNeighbours extends AppCompatActivity {
     private Button mButton;
     private ImageView mImageView;
     private long adder;
+    private long adderDataset;
 
     private TextView mTextView;
+    Mat collectedDatasets;
 
 
     @Override
@@ -64,6 +67,7 @@ public class KNeighbours extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 getIntent().removeExtra("imageCaptured");
+                System.gc();
                 finish();
             }
         });
@@ -78,10 +82,12 @@ public class KNeighbours extends AppCompatActivity {
     }
 
 
-    public void predictCurrentImageWithKNN(Mat inputImage) {
-        Mat listMat = new Mat();
+    public void predictCurrentImageWithKNN(Mat inputImage, Mat listMat) {
+//        Mat listMat = new Mat();
         AssetManager assetManager = getAssets();
         List<String> listLabels = new ArrayList<String>();
+        Mat temporaryImage = new Mat();
+        InputStream istr = null;
 
         /*====================================Collecting Dataset==================================*/
         try {
@@ -95,29 +101,7 @@ public class KNeighbours extends AppCompatActivity {
                 for (String fileName:fileNames){
                     if(fileName.endsWith(".jpg") || fileName.endsWith(".png")
                             || fileName.endsWith(".jpeg")){
-
-                        InputStream istr = null;
-
-                        try {
-
-                            Mat resizedImage = new Mat();
-
-                            istr = assetManager.open("datasets/"+folder+"/"+fileName);
-                            Bitmap bitmap_ = BitmapFactory.decodeStream(istr);
-                            Bitmap bitmap = bitmap_.copy(Bitmap.Config.ARGB_8888, true);
-                            Utils.bitmapToMat(bitmap, resizedImage, true);
-
-                            resizedImage = resizedImage.reshape(1, 1);
-                            resizedImage.convertTo(resizedImage, CvType.CV_32F);
-
-                            listMat.push_back(resizedImage.reshape(1,1));
-                            listLabels.add(folder.trim());
-
-                        } catch (IOException e) {
-//                            Log.i("OpenCV_Log", e.getMessage());
-                            e.printStackTrace();
-                        }
-
+                        listLabels.add(folder.trim());
                     }
                 }
             }
@@ -152,9 +136,10 @@ public class KNeighbours extends AppCompatActivity {
 
             mTextView = (TextView) findViewById(R.id.textview_prediction);
             mTextView.setText(labelPrediction);
+            newMat.release();
+            labels.release();
+            listMat.release();
             KNN.clear();
-
-//            Log.i("OpenCV_Log", String.format("Label integer: %f, Prediction: %s", nearestValue, labelPrediction));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -176,15 +161,20 @@ public class KNeighbours extends AppCompatActivity {
         actionBackButton();
 
         adder = getIntent().getLongExtra("imageCaptured", 0);
+        adderDataset = getIntent().getLongExtra("collectedDataset", 0);
 
         Mat imageCropped = convertGetIntentToMat(adder);
         Bitmap mBitmap = convertMatToBitmap(imageCropped);
         showImageOnImageView(mBitmap);
 
-
         Mat resizedImage = resizeImage(imageCropped);
         Mat reshapedImage = reshapeMat(resizedImage);
 
-        predictCurrentImageWithKNN(reshapedImage);
+        SystemClock.sleep(200);
+        predictCurrentImageWithKNN(reshapedImage, convertGetIntentToMat(adderDataset));
+
+        imageCropped.release();
+        resizedImage.release();
+        reshapedImage.release();
     }
 }
