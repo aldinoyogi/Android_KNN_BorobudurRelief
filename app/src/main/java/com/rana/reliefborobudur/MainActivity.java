@@ -35,6 +35,7 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -56,6 +57,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MainActivity extends Activity implements CvCameraViewListener2 {
 
+    private static final int BOLD = Typeface.BOLD;
     private static String LOG_OpenCV = "OpenCV_Log";
 
     private Mat matCroppedImage;
@@ -248,6 +250,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mTextView = (TextView) findViewById(R.id.textview_prediction);
         mImageView = (ImageView) findViewById(R.id.imageview_captured);
 
+        mTextView.setTypeface(null, BOLD);
+
         onChangeSeekbarForCropping();
         onChangeOrientationCropping();
         onClickCaptureImage();
@@ -259,9 +263,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         seekBarCrop = (SeekBar) findViewById(R.id.seekbar_crop);
         seekBarCrop.setProgress(50);
         seekBarCrop.setMax(95);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//            seekBarCrop.setMin(5);
-//        }
         seekBarCrop.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -349,7 +350,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         stringLabelPrediction = listStringLabelImage.get((int)floatNearestValue);
 
         mTextView.setText(stringLabelPrediction);
-        System.gc();
     }
 
     private void showImagePreview(){
