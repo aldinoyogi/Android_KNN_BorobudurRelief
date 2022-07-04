@@ -66,11 +66,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private Mat matDatasetImage;
     private Mat matLabelIntImage;
     private Mat matImagePredicted;
+    private Mat matSelectedDistance;
 
     private float floatNearestValue;
     private String stringLabelPrediction;
 
     private List<String> listStringLabelImage = new ArrayList<String>();
+    private List<Mat> listMatDatasets = new ArrayList<Mat>();
 
     private int intCameraHeight;
     private int intCameraWidth;
@@ -111,6 +113,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                         matTempImage = new Mat();
                         matDatasetImage = new Mat();
                         matImagePredicted = new Mat();
+                        matSelectedDistance = new Mat();
 
                         AssetManager assetManager = getAssets();
                         String[] stringDirPaths = assetManager.list("datasets");
@@ -140,6 +143,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
                                         matDatasetImage.push_back(matTempImage.reshape(1,1));
                                         listStringLabelImage.add(stringFolderName);
+                                        listMatDatasets.add(matTempImage.reshape(1,1));
 
                                         matTempImage.release();
 
@@ -335,6 +339,38 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         });
     }
 
+    private void showImagePreview(){
+        bitmapImageView = Bitmap.createBitmap(matCroppedImage.cols(),
+                matCroppedImage.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(matCroppedImage, bitmapImageView, true);
+        mImageView.setImageBitmap(bitmapImageView);
+    }
+
+    private double findDistance(int intNearestValue){
+        double totalEuc = 0;
+        matSelectedDistance = listMatDatasets.get(intNearestValue);
+        for (int row = 0; row < matSelectedDistance.rows(); row++)
+        {
+            for (int col = 0; col < matSelectedDistance.cols(); col++)
+            {
+                double[] pixelSelectedImage = matSelectedDistance.get(row, col);
+                double[] pixelTempImage = matTempImage.get(row, col);
+
+                for (int colPix = 0; colPix < pixelSelectedImage.length; colPix++)
+                {
+                    totalEuc = totalEuc + (Math.pow(pixelTempImage[colPix], 2)
+                            - Math.pow(pixelSelectedImage[colPix], 2));
+                }
+            }
+        }
+
+        totalEuc = Math.sqrt(Math.abs(totalEuc));
+        Log.i(LOG_OpenCV, String.format("Distance: %f", totalEuc));
+        matSelectedDistance.release();
+
+        return totalEuc;
+    }
+
     private void predictCurrentImage(){
 
         showImagePreview();
@@ -346,16 +382,19 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         KNearest KNN = KNearest.create();
         KNN.train(matDatasetImage, Ml.ROW_SAMPLE, matLabelIntImage);
 
-        floatNearestValue = KNN.findNearest(matTempImage,5,matImagePredicted);
+        floatNearestValue = KNN.findNearest(matTempImage,1,matImagePredicted);
         stringLabelPrediction = listStringLabelImage.get((int)floatNearestValue);
 
-        mTextView.setText(stringLabelPrediction);
+        double doubleDistance = findDistance((int)floatNearestValue);
+        if (doubleDistance > 6500 || doubleDistance < 100)
+        {
+            mTextView.setText(stringLabelPrediction);
+        }
+        else
+        {
+            mTextView.setText("Unknown");
+        }
     }
 
-    private void showImagePreview(){
-        bitmapImageView = Bitmap.createBitmap(matCroppedImage.cols(),
-                matCroppedImage.rows(), Bitmap.Config.ARGB_8888);
-        Utils.matToBitmap(matCroppedImage, bitmapImageView, true);
-        mImageView.setImageBitmap(bitmapImageView);
-    }
+
 }
