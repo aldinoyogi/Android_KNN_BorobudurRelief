@@ -43,6 +43,18 @@
 
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/fab_auto_crop"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|left"
+            android:layout_marginLeft="55dp"
+            android:layout_marginBottom="32dp"
+            android:clickable="true"
+            android:text="A"
+            android:textSize="25dp" />
+
+
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/fab_portrait"
             android:layout_width="wrap_content"
@@ -76,6 +88,18 @@
             android:thumb="@drawable/seek_thumb"
             />
 
+        <Switch
+            android:id="@+id/switch_invert"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:layout_gravity="top|right"
+            android:layout_marginTop="20dp"
+            android:layout_marginRight="20dp"
+            android:textColor="@color/white"
+            android:textSize="8dp"
+            android:text="Invert\nThreshold   " />
+
     </FrameLayout>
 
     <FrameLayout
@@ -104,10 +128,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="left"
-                android:text="TextView"
+                android:text="Error"
                 android:textSize="25dp"
                 android:layout_marginTop="20dp"
-                android:layout_marginBottom="15dp"
+                android:layout_marginBottom="2dp"
+                android:layout_marginHorizontal="20dp"
+                android:textColor="#99000000" />
+
+            <TextView
+                android:id="@+id/textview_distance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="left"
+                android:text="Distance"
+                android:textSize="18dp"
+                android:layout_below="@id/textview_prediction"
+                android:layout_marginBottom="20dp"
                 android:layout_marginHorizontal="20dp"
                 android:textColor="#99000000" />
 
