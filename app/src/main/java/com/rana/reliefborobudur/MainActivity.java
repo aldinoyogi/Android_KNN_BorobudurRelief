@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -316,9 +317,17 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         {
             Imgproc.threshold(matTempImage, matTempImage, 60,155, Imgproc.THRESH_BINARY_INV);
         }
+
         Imgproc.findContours(matTempImage, contours, matHierarchy,
                 Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE, new Point(0, 0));
         matHierarchy.release();
+
+        contours = contours.stream().filter(c -> {
+            int minArea = (int)(floatScreenWidth*0.7);
+            double area = Imgproc.contourArea(c);
+            if (area > minArea) return true;
+            return false;
+        }).collect(Collectors.toList());
 
         for (int contourIdx = 0; contourIdx < contours.size(); contourIdx++)
         {
@@ -512,6 +521,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Utils.matToBitmap(matCroppedImage, bitmapImageView, true);
         mImageView.setImageBitmap(bitmapImageView);
         mImageView.getLayoutParams().width = (int) floatScreenWidth;
+        mImageView.getLayoutParams().height = (int)(floatScreenWidth*0.65);
     }
 
     private void showImagePreviewDataset(Mat image){
@@ -520,12 +530,13 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         Utils.matToBitmap(image, bitmapImageViewDataset, true);
         mImageViewDataset.setImageBitmap(bitmapImageViewDataset);
         mImageViewDataset.getLayoutParams().width = (int) floatScreenWidth;
+        mImageViewDataset.getLayoutParams().height = (int)(floatScreenWidth*0.65);
     }
 
     private Mat resizeImage(Mat image){
         int width = image.width();
         int height = image.height();
-        int maxValue = 480;
+        int maxValue = 560;
         int maxShape = Math.max(width, height);
 
         if (maxShape > maxValue)
@@ -598,6 +609,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             {
                 mTextViewPrediction.setText("Unknown");
                 mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
+                mImageViewDataset.setImageResource(android.R.color.transparent);
             }
             else
             {
@@ -608,11 +620,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
             listKnnMatches.clear();
         }
-        catch (Exception exc)
-        {
-        }
-
-
+        catch (Exception exc) { }
     }
 
 }
