@@ -606,7 +606,6 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 showImagePreviewDataset(listMatDatasets.get(intNumberImageDataset));
             }
 
-
             listKnnMatches.clear();
         }
         catch (Exception exc)
