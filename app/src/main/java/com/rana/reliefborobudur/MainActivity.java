@@ -27,6 +27,7 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.features2d.BFMatcher;
 import org.opencv.features2d.ORB;
 import org.opencv.imgproc.Imgproc;
+import org.w3c.dom.Text;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
@@ -36,6 +37,7 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.SurfaceView;
 import android.view.View;
@@ -83,7 +85,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private MatOfKeyPoint keyPoint_2;
 
     private BFMatcher bfMatcher;
-    List<MatOfDMatch> listKnnMatches;
+    private List<MatOfDMatch> listKnnMatches;
+
+    private int intNumberImageDataset;
     /*===============================================================================*/
 
     private int intCameraHeight;
@@ -109,16 +113,18 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private FrameLayout layoutMain;
     private FrameLayout layoutView;
 
-    private TextView mTextView;
-    private TextView mAutoCrop;
-    private TextView mDetail;
+    private TextView mTextViewPrediction;
+    private TextView mTextviewAutoCrop;
+    private TextView mTextViewDistance;
 
     private Button mBackButton;
     private ImageView mImageView;
+    private ImageView mImageViewDataset;
     private SeekBar seekBarCrop;
     private Switch mSwitchInvert;
 
     private Bitmap bitmapImageView;
+    private Bitmap bitmapImageViewDataset;
 
     /*========================For AutoCrop=====================*/
     private Mat matTempImage2;
@@ -129,6 +135,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private Rect rect;
     /*=========================================================*/
 
+    private DisplayMetrics displayMetrics;
+    private float floatScreenWidth;
+
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -138,6 +147,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 {
                     try
                     {
+
+                        displayMetrics = getResources().getDisplayMetrics();
+                        floatScreenWidth = displayMetrics.widthPixels;
+
                         matCameraImage = new Mat();
                         matCroppedImage = new Mat();
                         matTempImage = new Mat();
@@ -176,6 +189,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                                     String stringFullPath = "datasets/"+stringFilename;
                                     inputStream = assetManager.open(stringFullPath);
 
+                                    matTempImage = new Mat();
+
                                     Bitmap tempBitmap = BitmapFactory.decodeStream(inputStream);
                                     Utils.bitmapToMat(tempBitmap, matTempImage, true);
 
@@ -187,14 +202,10 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                                     featureDetector_1.detectAndCompute(matTempImage, matMaskDetector,
                                             keyPoint_1, descriptors_1);
 
-//                                    Log.i(LOG_OpenCV, String.format("Descriptor 1: %d", descriptors_1.rows()));
-
                                     listKeypoint_1.add(keyPoint_1);
                                     listDescriptor_1.add(descriptors_1);
 
                                     matMaskDetector.release();
-//                                    descriptors_1.release();
-                                    matTempImage.release();
                                 } catch (Exception ex)
                                 {
                                     ex.printStackTrace();
@@ -367,9 +378,12 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
         mOpenCvCameraView.setCvCameraViewListener(this);
 
-        mTextView = (TextView) findViewById(R.id.textview_prediction);
+        mTextViewPrediction = (TextView) findViewById(R.id.textview_prediction);
+        mTextViewDistance = (TextView) findViewById(R.id.textview_distance);
+        mImageViewDataset = (ImageView) findViewById(R.id.imageview_dataset);
         mImageView = (ImageView) findViewById(R.id.imageview_captured);
-        mTextView.setTypeface(null, BOLD);
+
+        mTextViewPrediction.setTypeface(null, BOLD);
 
         onClickAutoCropImage();
         onChangeSwitchInvert();
@@ -392,20 +406,20 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     }
 
     private void onClickAutoCropImage(){
-        mAutoCrop = (TextView) findViewById(R.id.fab_auto_crop);
-        mAutoCrop.setTextColor(Color.parseColor("#ffffff"));
-        mAutoCrop.setTypeface(null, BOLD);
-        mAutoCrop.setOnClickListener(new View.OnClickListener() {
+        mTextviewAutoCrop = (TextView) findViewById(R.id.fab_auto_crop);
+        mTextviewAutoCrop.setTextColor(Color.parseColor("#ffffff"));
+        mTextviewAutoCrop.setTypeface(null, BOLD);
+        mTextviewAutoCrop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 booleanAutoCrop = !booleanAutoCrop;
                 if (booleanAutoCrop)
                 {
-                    mAutoCrop.setTextColor(Color.parseColor("#ffb600"));
+                    mTextviewAutoCrop.setTextColor(Color.parseColor("#ffb600"));
                 }
                 else
                 {
-                    mAutoCrop.setTextColor(Color.parseColor("#ffffff"));
+                    mTextviewAutoCrop.setTextColor(Color.parseColor("#ffffff"));
                 }
             }
         });
@@ -497,6 +511,15 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                 matCroppedImage.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(matCroppedImage, bitmapImageView, true);
         mImageView.setImageBitmap(bitmapImageView);
+        mImageView.getLayoutParams().width = (int) floatScreenWidth;
+    }
+
+    private void showImagePreviewDataset(Mat image){
+        bitmapImageViewDataset = Bitmap.createBitmap(image.cols(),
+                image.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(image, bitmapImageViewDataset, true);
+        mImageViewDataset.setImageBitmap(bitmapImageViewDataset);
+        mImageViewDataset.getLayoutParams().width = (int) floatScreenWidth;
     }
 
     private Mat resizeImage(Mat image){
@@ -560,19 +583,29 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
             intMatchPrediction = 0;
             stringLabelPrediction = "";
+            intNumberImageDataset = 0;
 
             resultMatch.forEach((k, v) -> {
                 if (v > intMatchPrediction)
                 {
                     intMatchPrediction = v;
                     stringLabelPrediction = k;
+                    intNumberImageDataset = listStringLabelImage.indexOf(stringLabelPrediction);
                 }
             });
 
-            mTextView.setText(stringLabelPrediction);
+            if (intMatchPrediction < 11)
+            {
+                mTextViewPrediction.setText("Unknown");
+                mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
+            }
+            else
+            {
+                mTextViewPrediction.setText(stringLabelPrediction);
+                mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
+                showImagePreviewDataset(listMatDatasets.get(intNumberImageDataset));
+            }
 
-            Log.i(LOG_OpenCV, String.format("Name: %s, Total: %d",
-                    stringLabelPrediction, intMatchPrediction));
 
             listKnnMatches.clear();
         }
