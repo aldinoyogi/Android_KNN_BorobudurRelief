@@ -1,10 +1,13 @@
 package com.rana.reliefborobudur;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
@@ -12,31 +15,36 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.Core;
-import org.opencv.core.DMatch;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfDMatch;
-import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.features2d.BFMatcher;
-import org.opencv.features2d.ORB;
+import org.opencv.ml.KNearest;
+import org.opencv.ml.Ml;
+import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.imgproc.Imgproc;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
@@ -47,6 +55,7 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
@@ -60,32 +69,18 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private Mat matCroppedImage;
     private Mat matCameraImage;
     private Mat matTempImage;
+    private Mat matDatasetImage;
+    private Mat matLabelIntImage;
+    private Mat matImagePredicted;
+    private Mat matSelectedDistance;
 
-    private int intMatchPrediction;
     private float floatNearestValue;
     private String stringLabelPrediction;
 
-    /*=======================================For KNN=================================*/
     private List<String> listStringLabelImage = new ArrayList<String>();
     private List<Mat> listMatDatasets = new ArrayList<Mat>();
 
-    private List<Mat> listDescriptor_1;
-    private List<MatOfKeyPoint> listKeypoint_1;
-
-    private Mat matMaskDetector;
-
-    private ORB featureDetector_1;
-    private Mat descriptors_1;
-    private MatOfKeyPoint keyPoint_1;
-
-    private ORB featureDetector_2;
-    private Mat descriptors_2;
-    private MatOfKeyPoint keyPoint_2;
-
-    private BFMatcher bfMatcher;
-    List<MatOfDMatch> listKnnMatches;
-    /*===============================================================================*/
-
+    private KNearest KNN;
     private int intCameraHeight;
     private int intCameraWidth;
     private int intCropPoint = 0;
@@ -111,7 +106,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
     private TextView mTextView;
     private TextView mAutoCrop;
-    private TextView mDetail;
+    private TextView mDistance;
 
     private Button mBackButton;
     private ImageView mImageView;
@@ -141,69 +136,61 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                         matCameraImage = new Mat();
                         matCroppedImage = new Mat();
                         matTempImage = new Mat();
+                        matDatasetImage = new Mat();
+                        matImagePredicted = new Mat();
+                        matSelectedDistance = new Mat();
                         matHierarchy = new Mat();
-                        matMaskDetector = new Mat();
-                        descriptors_2 = new Mat();
-
-                        keyPoint_1 = new MatOfKeyPoint();
-                        keyPoint_2 = new MatOfKeyPoint();
-
                         contours = new ArrayList<MatOfPoint>();
-
-                        listKeypoint_1 = new ArrayList<MatOfKeyPoint>();
-                        listDescriptor_1 = new ArrayList<Mat>();
-                        listKnnMatches = new ArrayList<MatOfDMatch>();
-
-                        featureDetector_1 = ORB.create();
-                        featureDetector_2 = ORB.create();
-
-                        bfMatcher = BFMatcher.create();
 
                         AssetManager assetManager = getAssets();
                         String[] stringDirPaths = assetManager.list("datasets");
 
-                        for (String stringFilename: stringDirPaths)
+                        for (String stringFolderName: stringDirPaths)
                         {
-                            if
-                            (
-                                stringFilename.endsWith(".jpg")||
-                                stringFilename.endsWith(".png") ||
-                                stringFilename.endsWith(".jpeg")
-                            )
+                            String[] stringFilenames = assetManager.list("datasets/"+stringFolderName);
+                            for (String stringFilename: stringFilenames)
                             {
-                                try
+                                if
+                                (
+                                    stringFilename.endsWith(".jpg")||
+                                    stringFilename.endsWith(".png") ||
+                                    stringFilename.endsWith(".jpeg")
+                                )
                                 {
-                                    String stringFullPath = "datasets/"+stringFilename;
-                                    inputStream = assetManager.open(stringFullPath);
+                                    try
+                                    {
+                                        String stringFullPath = "datasets/"+stringFolderName+"/"+stringFilename;
+                                        inputStream = assetManager.open(stringFullPath);
 
-                                    Bitmap tempBitmap = BitmapFactory.decodeStream(inputStream);
-                                    Utils.bitmapToMat(tempBitmap, matTempImage, true);
+                                        Bitmap tempBitmap = BitmapFactory.decodeStream(inputStream);
+                                        Utils.bitmapToMat(tempBitmap, matTempImage, true);
 
-                                    listStringLabelImage.add(stringFilename.split("\\.", 2)[0]);
-                                    listMatDatasets.add(matTempImage);
+                                        matTempImage = matTempImage.reshape(1,1);
+                                        matTempImage.convertTo(matTempImage, CvType.CV_32F);
 
+                                        matDatasetImage.push_back(matTempImage.reshape(1,1));
+                                        listStringLabelImage.add(stringFolderName);
+                                        listMatDatasets.add(matTempImage.reshape(1,1));
 
-                                    descriptors_1 = new Mat();
-                                    featureDetector_1.detectAndCompute(matTempImage, matMaskDetector,
-                                            keyPoint_1, descriptors_1);
+                                        matTempImage.release();
 
-//                                    Log.i(LOG_OpenCV, String.format("Descriptor 1: %d", descriptors_1.rows()));
-
-                                    listKeypoint_1.add(keyPoint_1);
-                                    listDescriptor_1.add(descriptors_1);
-
-                                    matMaskDetector.release();
-//                                    descriptors_1.release();
-                                    matTempImage.release();
-                                } catch (Exception ex)
-                                {
-                                    ex.printStackTrace();
-                                    Log.i(LOG_OpenCV, ex.getMessage());
+                                    } catch (Exception ex)
+                                    {
+                                        ex.printStackTrace();
+                                    }
                                 }
                             }
                         }
+                        matLabelIntImage = new Mat(1, listStringLabelImage.size(), CvType.CV_32F);
+                        for (int i = 0; i < listStringLabelImage.size(); i++){
+                            matLabelIntImage.put(0, i, i);
+                        }
+                        matLabelIntImage.convertTo(matLabelIntImage, CvType.CV_32F);
                         mOpenCvCameraView.enableView();
                         booleanCaptureImage = true;
+
+                        KNN = KNearest.create();
+                        KNN.train(matDatasetImage, Ml.ROW_SAMPLE, matLabelIntImage);
 
                     } catch (Exception ex)
                     {
@@ -247,6 +234,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     public void onCameraViewStarted(int width, int height) {
         intCameraHeight = height;
         intCameraWidth = width;
+        //Log.i(LOG_OpenCV, String.format("Height: %d, Width: %d", height, width));
     }
 
     @Override
@@ -368,7 +356,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mOpenCvCameraView.setCvCameraViewListener(this);
 
         mTextView = (TextView) findViewById(R.id.textview_prediction);
+        mDistance = (TextView) findViewById(R.id.textview_distance);
         mImageView = (ImageView) findViewById(R.id.imageview_captured);
+
         mTextView.setTypeface(null, BOLD);
 
         onClickAutoCropImage();
@@ -471,8 +461,8 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                     layoutView.setVisibility(View.VISIBLE);
                     try
                     {
-                        startPredictFeatures();
                         SystemClock.sleep(300);
+                        predictCurrentImage();
                     }
                     catch (Exception exc) { }
                 }
@@ -499,88 +489,58 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
         mImageView.setImageBitmap(bitmapImageView);
     }
 
-    private Mat resizeImage(Mat image){
-        int width = image.width();
-        int height = image.height();
-        int maxValue = 480;
-        int maxShape = Math.max(width, height);
-
-        if (maxShape > maxValue)
+    private double findDistance(int intNearestValue){
+        double totalEuc = 0;
+        matSelectedDistance = listMatDatasets.get(intNearestValue);
+        for (int row = 0; row < matSelectedDistance.rows(); row++)
         {
-            int scaleW = maxValue;
-            int scaleH = (int)((height*maxValue)/width);
-            Imgproc.resize(image, image, new Size(scaleW, scaleH), Imgproc.INTER_AREA);
+            for (int col = 0; col < matSelectedDistance.cols(); col++)
+            {
+                double[] pixelSelectedImage = matSelectedDistance.get(row, col);
+                double[] pixelTempImage = matTempImage.get(row, col);
+
+                for (int colPix = 0; colPix < pixelSelectedImage.length; colPix++)
+                {
+                    if (colPix != 3)
+                    {
+                        totalEuc = totalEuc + Math.pow(pixelTempImage[colPix]
+                                - pixelSelectedImage[colPix], 2);
+                    }
+                }
+            }
+        }
+
+        totalEuc = Math.sqrt(Math.abs(totalEuc));
+        //Log.i(LOG_OpenCV, String.format("Distance: %f", totalEuc));
+        matSelectedDistance.release();
+
+        return totalEuc;
+    }
+
+
+    private void predictCurrentImage(){
+
+        Imgproc.resize(matCroppedImage, matTempImage, sizeKnnPredict);
+
+        matTempImage = matTempImage.reshape(1,1);
+        matTempImage.convertTo(matTempImage, CvType.CV_32F);
+
+        floatNearestValue = KNN.findNearest(matTempImage,1,matImagePredicted);
+        stringLabelPrediction = listStringLabelImage.get((int)floatNearestValue);
+        showImagePreview();
+
+        double doubleDistance = findDistance((int)floatNearestValue);
+        if (doubleDistance < 2800)
+        {
+            mTextView.setText(stringLabelPrediction);
         }
         else
         {
-            int scaleH = maxValue;
-            int scaleW = (int)((width*maxValue)/height);
-            Imgproc.resize(image, image, new Size(scaleW, scaleH), Imgproc.INTER_AREA);
+            mTextView.setText("Unknown");
         }
-        return image;
+        mDistance.setText(String.format("Distance: %.2f", doubleDistance));
+        mDistance.setTypeface(null, Typeface.ITALIC);
     }
 
-    private void startPredictFeatures(){
-        showImagePreview();
-
-        Mat grayMat = new Mat();
-        descriptors_2 = new Mat();
-
-        Imgproc.cvtColor(matCroppedImage, grayMat, Imgproc.COLOR_RGBA2GRAY, 1);
-        grayMat = resizeImage(grayMat);
-
-        featureDetector_2.detectAndCompute(grayMat, matMaskDetector,
-                keyPoint_2, descriptors_2);
-
-        Map<String,Integer> resultMatch = new HashMap<String,Integer>();
-
-        try
-        {
-
-            for (int i = 0; i < listDescriptor_1.size(); i++)
-            {
-                int totalMatch = 0;
-                descriptors_1 = new Mat();
-                descriptors_1 = listDescriptor_1.get(i);
-                bfMatcher.knnMatch(descriptors_1, descriptors_2, listKnnMatches, 3);
-
-                for (int j = 0; j < listKnnMatches.size(); j++)
-                {
-                    if (listKnnMatches.get(j).rows() > 1)
-                    {
-                        DMatch[] matches = listKnnMatches.get(j).toArray();
-                        if (matches[0].distance < 0.75f * matches[1].distance)
-                        {
-                            totalMatch = totalMatch + 1;
-                        }
-                    }
-                }
-                resultMatch.put(listStringLabelImage.get(i), totalMatch);
-            }
-
-            intMatchPrediction = 0;
-            stringLabelPrediction = "";
-
-            resultMatch.forEach((k, v) -> {
-                if (v > intMatchPrediction)
-                {
-                    intMatchPrediction = v;
-                    stringLabelPrediction = k;
-                }
-            });
-
-            mTextView.setText(stringLabelPrediction);
-
-            Log.i(LOG_OpenCV, String.format("Name: %s, Total: %d",
-                    stringLabelPrediction, intMatchPrediction));
-
-            listKnnMatches.clear();
-        }
-        catch (Exception exc)
-        {
-        }
-
-
-    }
 
 }
