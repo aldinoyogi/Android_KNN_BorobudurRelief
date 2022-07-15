@@ -1,12 +1,14 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">ReliefBorobudur</string>
-    <string name="Relief">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
-        \n\n
-        Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
-        \n\n
-        Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
-        \n\n
-        Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
-    </string>
+    <string name="Relief">Informasi belum diketahui.</string>
+    <string name="Relief_1">Relief ini berada pada tingkat Kamadhatu (kaki candi). Menggambarkan perilaku manusia yang masih terikat dengan nafsu duniawi. \n\n Relief Karmawibangga terdiri dari 160 panil yang menggambarkan hukum sebab akibat dari perilaku duniawi manusia. \n\n Pada relief ini digambarkan perilaku buruk manusia yang berkumpul untuk membicarakan perihal duniawi (bergosip). \n\n </string>
+    <string name="Relief_1_Title">Relief Karmawibangga (panil kiri)</string>
+    <string name="Relief_2">Relief ini berada pada tingkat Kamadhatu (kaki candi). Menggambarkan perilaku manusia yang masih terikat dengan nafsu duniawi. \n\n Relief Karmawibangga terdiri dari 160 panil yang menggambarkan hukum sebab akibat dari perilaku duniawi manusia. \n\n Pada relief ini digambarkan perilaku buruk manusia yang berkumpul untuk mencari kesenangan duniawi. \n\n </string>
+    <string name="Relief_2_Title">Relief Karmawibangga (panil kanan)</string>
+    <string name="Relief_3">Relief ini berada pada tingkat Kamadhatu (kaki candi). Menggambarkan perilaku manusia yang masih terikat dengan nafsu duniawi. \n\n Relief Karmawibangga terdiri dari 160 panil yang menggambarkan hukum sebab akibat dari perilaku duniawi manusia. \n\n Pada relief ini digambarkan perilaku buruk manusia yang berkumpul untuk membicarakan perihal duniawi (bergosip). \n\n </string>
+    <string name="Relief_3_Title">Relief Karmawibangga (panil kiri)</string>
+    <string name="Relief_4">Relief ini berada pada tingkat Kamadhatu (kaki candi). Menggambarkan perilaku manusia yang masih terikat dengan nafsu duniawi. \n\n Relief Karmawibangga terdiri dari 160 panil yang menggambarkan hukum sebab akibat dari perilaku duniawi manusia. \n\n Pada relief ini digambarkan perilaku manusia yang berkumpul untuk saling bercengkrama dengan satu sama lain. \n\n </string>
+    <string name="Relief_4_Title">Relief Karmawibangga (panil kanan)</string>
+    <string name="Relief_41">Relief ini bercerita tentang kehidupan Masyarakat Jawa pada saat Borobudur dibangun. \n\n Pada seblah kanan relief ini terdapat gambar perahu pinisi. Perahu pinisi adalah kapal layar bertiang ganda dengan cadik pada kedua sisinya yang digunakan untuk menjaga keseimbangan kapal. Perahu ini dahulu digunakan untuk perdagangan rempah antar pulau. \n\n </string>
+    <string name="Relief_41_Title">Panisi Bertiang Ganda dan Kehidupan Masyarakat Jawa Abad-8</string>
 </resources>

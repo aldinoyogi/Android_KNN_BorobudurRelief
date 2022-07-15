@@ -117,6 +117,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
     private TextView mTextViewPrediction;
     private TextView mTextviewAutoCrop;
     private TextView mTextViewDistance;
+    private TextView mTextViewDetail;
 
     private Button mBackButton;
     private ImageView mImageView;
@@ -195,7 +196,9 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
                                     Bitmap tempBitmap = BitmapFactory.decodeStream(inputStream);
                                     Utils.bitmapToMat(tempBitmap, matTempImage, true);
 
-                                    listStringLabelImage.add(stringFilename.split("\\.", 2)[0]);
+                                    String ReliefName = stringFilename.split("\\.", 2)[0];
+                                    ReliefName = ReliefName.replace(" ", "_");
+                                    listStringLabelImage.add(ReliefName);
                                     listMatDatasets.add(matTempImage);
 
 
@@ -389,6 +392,7 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
 
         mTextViewPrediction = (TextView) findViewById(R.id.textview_prediction);
         mTextViewDistance = (TextView) findViewById(R.id.textview_distance);
+        mTextViewDetail = (TextView) findViewById(R.id.textview_detail);
         mImageViewDataset = (ImageView) findViewById(R.id.imageview_dataset);
         mImageView = (ImageView) findViewById(R.id.imageview_captured);
 
@@ -609,13 +613,39 @@ public class MainActivity extends Activity implements CvCameraViewListener2 {
             {
                 mTextViewPrediction.setText("Unknown");
                 mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
+                mTextViewDetail.setText(getResources().getString(R.string.Relief));
                 mImageViewDataset.setImageResource(android.R.color.transparent);
             }
             else
             {
-                mTextViewPrediction.setText(stringLabelPrediction);
-                mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
                 showImagePreviewDataset(listMatDatasets.get(intNumberImageDataset));
+                mTextViewDistance.setText(String.format("KnnMatch Features: %d", intMatchPrediction));
+                switch (stringLabelPrediction)
+                {
+                    case "Relief_1":
+                        mTextViewPrediction.setText(getResources().getString(R.string.Relief_1_Title));
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief_1));
+                        break;
+                    case "Relief_2":
+                        mTextViewPrediction.setText(getResources().getString(R.string.Relief_2_Title));
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief_2));
+                        break;
+                    case "Relief_3":
+                        mTextViewPrediction.setText(getResources().getString(R.string.Relief_3_Title));
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief_3));
+                        break;
+                    case "Relief_4":
+                        mTextViewPrediction.setText(getResources().getString(R.string.Relief_4_Title));
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief_4));
+                        break;
+                    case "Relief_41":
+                        mTextViewPrediction.setText(getResources().getString(R.string.Relief_41_Title));
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief_41));
+                        break;
+                    default:
+                        mTextViewPrediction.setText(stringLabelPrediction);
+                        mTextViewDetail.setText(getResources().getString(R.string.Relief));
+                }
             }
 
             listKnnMatches.clear();

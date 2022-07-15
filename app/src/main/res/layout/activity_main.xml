@@ -180,7 +180,7 @@
                     android:textSize="18dp"
                     android:layout_marginHorizontal="20dp"
                     android:textColor="#99000000"
-                    android:id="@+id/text_detail"
+                    android:id="@+id/textview_detail"
                     />
 
             </ScrollView>
